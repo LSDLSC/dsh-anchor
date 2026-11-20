@@ -1,0 +1,10 @@
+[Unit]
+Description=Run memory digest every night at 23:50
+
+[Timer]
+OnCalendar=*-*-* 23:50:00
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

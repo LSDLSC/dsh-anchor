@@ -1,0 +1,11 @@
+[Unit]
+Description=DSH workspace registry guard (repair updatedAt / re-register sessions)
+After=network.target
+
+[Service]
+Type=oneshot
+Environment=DSH_HOME=/home/user/.dsh
+Environment=GUARD_LOG=/var/log/dsh-memory-guard.log
+Environment=RESTART_CMD=systemctl restart dsh-web.service
+ExecStart=/usr/bin/python3 /usr/local/bin/dsh-memory-guard.py
+Nice=10

@@ -1,0 +1,15 @@
+# 个人数据绝不进仓库
+*.jsonl
+!example.jsonl
+*.bak
+*.bak-*
+__pycache__/
+*.pyc
+.env
+memory/
+*.log
+
+# 编辑器
+.vscode/
+.idea/
+.DS_Store
