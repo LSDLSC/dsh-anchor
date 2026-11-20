@@ -4,8 +4,9 @@ After=network.target
 
 [Service]
 Type=oneshot
+EnvironmentFile=-/etc/anchor.env
 Environment=DSH_HOME=/home/user/.dsh
 Environment=GUARD_LOG=/var/log/dsh-memory-guard.log
 Environment=RESTART_CMD=systemctl restart dsh-web.service
-ExecStart=/usr/bin/python3 /usr/local/bin/dsh-memory-guard.py
+ExecStart=/usr/bin/python3 /usr/local/bin/registry_guard.py --adapter dsh
 Nice=10

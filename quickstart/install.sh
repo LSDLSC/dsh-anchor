@@ -15,7 +15,9 @@ set -euo pipefail
 DSH_HOME="${DSH_HOME:-$HOME/.dsh}"
 MEM_DIR="${MEM_DIR:-$DSH_HOME/memory}"
 BIN="${BIN:-$HOME/.local/bin}"
-SRC="$(cd "$(dirname "$0")/.." && pwd)/src"
+HERE="$(cd "$(dirname "$0")" && pwd)"
+# 独立包用 ./payload；仓库内直接用 ../src
+if [ -d "$HERE/payload" ]; then SRC="$HERE/payload"; else SRC="$(cd "$HERE/.." && pwd)/src"; fi
 WITH_TIMERS=0
 
 while [ $# -gt 0 ]; do

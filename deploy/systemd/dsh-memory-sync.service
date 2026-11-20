@@ -4,6 +4,7 @@ After=network-online.target
 
 [Service]
 Type=oneshot
+EnvironmentFile=-/etc/anchor.env
 Environment=DSH_HOME=/home/user/.dsh
 ExecStart=/usr/local/bin/dsh-memory-sync.sh
 Nice=10

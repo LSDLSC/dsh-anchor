@@ -4,8 +4,9 @@ After=network.target
 
 [Service]
 Type=oneshot
+EnvironmentFile=-/etc/anchor.env
 Environment=HOME=/root
 Environment=DSH_HOME=/home/user/.dsh
 Environment=MEMORY_DIR=/home/user/.dsh/memory
-ExecStart=/usr/local/bin/node /home/user/.dsh/memory/memory_digest.mjs 24
+ExecStart=/usr/local/bin/node /usr/local/bin/memory_digest.mjs 24
 Nice=10
