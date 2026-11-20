@@ -1,5 +1,7 @@
 # Anchor · 陪伴型 AI 的记忆锚
 
+**仓库地址：<https://github.com/LSDLSC/dsh-anchor>**
+
 > 让 AI 记住该记的，忘掉该忘的，丢了还能捞回来。
 
 Anchor 是一套从真实故障里长出来的工具集：会话注册表被覆盖、记忆只剩一份、人设被时间冲淡、旧内容挤占上下文。它不是"又一个记忆插件"，而是把**可靠性**当成第一需求来做——先不丢，再谈聪明。
@@ -246,6 +248,26 @@ docker compose -f docker/docker-compose.yml up -d
 - **可以整体搬走**：`tar czf memory.tgz $MEMORY_DIR` 就是完整备份，换机器解开即用。
 
 如果哪天这个仓库被删了，你手上的记忆目录依然完整可用——这是有意为之。
+
+---
+
+## 隐私与脱敏
+
+这个仓库是公开的，任何人都能 clone、下载、逐行读。所以它里面**不含任何真实数据**：
+
+- 没有真实记忆：`*.jsonl`（事实与墓地）、`memory/`、`state/` 由 `.gitignore` 排除，仓库里只有空目录和示例；
+- 没有本机信息：路径统一写成 `/home/user`、`/srv/app`，不含用户名、主机名、内网 IP、服务器地址；
+- 没有凭据：密钥、令牌、密码、AccessKey 一律不出现；`memory_digest.mjs` 里带的是**打码规则**（`/LTAI[A-Za-z0-9]{10,}/` → `LTAI***` 之类），不是凭据本身；
+- 没有真名：示例人格、示例事实都是占位文本，`templates/soul/soul.example.md` 只讲该写什么、不该写什么。
+
+要公开发布自己的分支前，建议自己再扫一遍：
+
+```bash
+git log -p --all | grep -nE "你的用户名|你的主机名|你的内网IP|密码|token|LTAI|sk-" 
+grep -rIn -E "/home/[a-z]+|/root/|[A-Z]:\\\\Users" . --exclude-dir=.git
+```
+
+记忆数据本身永远只该待在 `$MEMORY_DIR` 里，进版本库的只有代码和模板。
 
 ---
 
