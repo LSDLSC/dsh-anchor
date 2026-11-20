@@ -26,6 +26,7 @@ $MEMORY_DIR/
 ├── journal/                会话原文摘要，按天落盘（L3 经历）
 ├── state.json              上一次做到哪、下一步做什么（L4 交接）
 ├── soul/soul.md            身份、关系、底线（不进遗忘，只能人工改）
+├── emotion.json            情绪状态 + 关系刻度（按小时衰减，见下）
 └── graveyard/              墓地：移出检索但物理保留，可 restore
     ├── index.json
     └── 2026-11/facts-2026-11.jsonl
@@ -134,6 +135,52 @@ P = σ(A − τ)                         # 召回概率，τ 默认 0
 
 ---
 
+## 情绪与关系刻度
+
+记忆管"记得什么"，情绪管"此刻什么状态、跟你到什么程度"。它单独存在 `emotion.json`，
+因为更新节奏不同：事实按天累积，情绪按小时衰减。
+
+```bash
+emotion show                 # 现算状态
+emotion show --inject        # 一行可直接塞进 system prompt：
+                             # [心情] 开心（强度 4.2/10）；对对方：熟悉（亲密 12/100，信任 8）；昨天之后就没聊过
+emotion event --affinity 3 --trust 1 --note "被夸了"
+emotion set --mood 低落 --intensity 6 --tau 1.0
+emotion touch                # 只记"聊过天"，不动情绪
+```
+
+**强度是现算的，不是存下来的**：
+
+```
+I(t) = I0 × exp(−hours / (tau × 24)) + time_bonus(hour) + noise(15min 种子)
+低于 0.5 回落到「平静」
+```
+
+每种情绪有自己的 `tau`（兴奋 0.25–0.6 天，疲惫/低落 1.0 天，平静 3.0 天），
+所以"开心"退得快、"难过"留得久，不需要写一堆 if。
+
+**事件分三档**：强度 ≥6 覆盖（并加 20–80 分钟冷却）；3–5.9 混合（旧情绪打折而不是清零）；
+<3 轻推（±1，不重置时间轴）。负面事件乘 0.7 的乐观偏置，一句气话不该把关系刻度打穿。
+
+**关系刻度** `affinity` / `trust` 各 0–100，分五段：陌生 / 熟悉(21) / 亲近(41) / 亲密(61) / 家人(81)。
+最近 30 条事件留在 `relationship.events`，能回看是哪件事把刻度推上去的。
+
+自动侧接一行就够：
+
+```bash
+echo "用户说：谢谢你，今天辛苦了" | python3 src/emotion_auto.py --inject
+```
+
+它按关键词表判正负与强度，转成一次 `emotion event`，只做轻推。
+
+> 注入位置建议放在 system prompt 的**最后一段**。放最前面模型会把它当人设来演，
+> 而不是当"此刻的状态"来体现。细节见 [`docs/emotion-model.md`](docs/emotion-model.md)。
+
+情绪不进遗忘机制，也不写进 `facts.jsonl`——它一天变好几次，不该挤占事实检索。
+"性格"属于 `soul/soul.md`（只能人工改），情绪是性格在某一刻的表现。
+
+---
+
 ## 命令一览
 
 | 命令 | 作用 |
@@ -151,6 +198,11 @@ P = σ(A − τ)                         # 召回概率，τ 默认 0
 | `anchor check` | 环境/路径/依赖自检 |
 | `anchor guard` | 手动跑一次注册表守卫 |
 | `registry_guard --adapter dsh\|jsonfile` | 只跑守卫 |
+| `emotion show [--inject]` | 查看现算情绪 / 输出一行注入文本 |
+| `emotion set --mood X --intensity N` | 设定情绪基准与衰减常数 |
+| `emotion event --affinity N --trust N --note 文本` | 记一次影响关系的事件 |
+| `emotion touch` / `emotion decay` | 记一次对话 / 把现算强度结算回基准 |
+| `python3 src/emotion_auto.py --text 文本` | 从一段对话自动轻推情绪 |
 
 `anchor status` 的四种状态：`[OK ]` 正常、`[NEW ]` 从未运行、`[LATE]` 超期、`[FAIL]` 失败；
 后三种退出码非 0，可以挂到任何监控上。
@@ -169,6 +221,7 @@ P = σ(A − τ)                         # 召回概率，τ 默认 0
 | `ANCHOR_REGISTRY_IDS` | `state.sessions[].id` 之类 | 注册表里存 id 列表的 JSON 路径 |
 | `ANCHOR_REGISTRY_DIR` | DSH 的 `sessions/` | 磁盘目录，每个子目录 = 一个 id |
 | `RESTART_CMD` | 无 | 守卫写完注册表后重启宿主的命令 |
+| `ANCHOR_TARGET_NAME` | `对方` | 情绪注入文本里怎么称呼对方 |
 
 ---
 
@@ -255,7 +308,7 @@ docker compose -f docker/docker-compose.yml up -d
 
 这个仓库是公开的，任何人都能 clone、下载、逐行读。所以它里面**不含任何真实数据**：
 
-- 没有真实记忆：`*.jsonl`（事实与墓地）、`memory/`、`state/` 由 `.gitignore` 排除，仓库里只有空目录和示例；
+- 没有真实记忆：`*.jsonl`（事实与墓地）、`memory/`、`state/`、`emotion.json` 由 `.gitignore` 排除，仓库里只有空目录和示例；
 - 没有本机信息：路径统一写成 `/home/user`、`/srv/app`，不含用户名、主机名、内网 IP、服务器地址；
 - 没有凭据：密钥、令牌、密码、AccessKey 一律不出现；`memory_digest.mjs` 里带的是**打码规则**（`/LTAI[A-Za-z0-9]{10,}/` → `LTAI***` 之类），不是凭据本身；
 - 没有真名：示例人格、示例事实都是占位文本，`templates/soul/soul.example.md` 只讲该写什么、不该写什么。

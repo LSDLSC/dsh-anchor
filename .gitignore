@@ -20,3 +20,8 @@ dist/
 # 生成物
 memory-view.html
 state/
+
+# 个人状态（情绪/交接）
+emotion.json
+emotion.json.*
+state.json

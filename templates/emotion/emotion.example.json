@@ -1,0 +1,16 @@
+{
+  "updated_at": "2026-01-01 00:00",
+  "last_chat": null,
+  "mood": {
+    "label": "平静",
+    "intensity0": 3.0,
+    "since": "2026-01-01 00:00",
+    "tau": 3.0,
+    "cooldown_until": null
+  },
+  "relationship": {
+    "affinity": 0,
+    "trust": 0,
+    "events": []
+  }
+}
