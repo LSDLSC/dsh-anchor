@@ -17,7 +17,6 @@
 
         memory.py       四层记忆 + 检索 + 墓地
         activation.py   ACT-R 激活打分
-        emotion.py      情绪状态机
 ```
 
 ## 记忆分层
@@ -38,9 +37,3 @@
 
 同步脚本逐份推送，GitHub 失败显式报错——这是最容易静默丢的一份。
 Windows 侧用任务计划程序执行同一个脚本。
-
-## 情绪与关系
-
-`emotion.json` 保存 `mood{label,intensity0,since,tau}` 与
-`relationship{affinity,trust,events}`。读取时按当前时间现算强度，不写回；
-只有事件才修改状态。这样"冷却"是连续函数，不是定时器。

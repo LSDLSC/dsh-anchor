@@ -1,0 +1,18 @@
+# 用法：
+#   DSH_HOME=~/.dsh MEMORY_DIR=./memory docker compose up --build anchor
+#   docker compose run --rm anchor check
+services:
+  anchor:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: anchor:local
+    environment:
+      DSH_HOME: /data/dsh
+      MEMORY_DIR: /data/memory
+      USER_NAME: ${USER_NAME:-the user}
+    volumes:
+      # 守卫需要写注册表，所以 dsh 目录是读写挂载；确认只跑 status 时可改 :ro
+      - ${DSH_HOME:-~/.dsh}:/data/dsh
+      - ${MEMORY_DIR:-./memory}:/data/memory
+    command: ["status"]

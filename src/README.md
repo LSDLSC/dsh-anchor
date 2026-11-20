@@ -4,7 +4,6 @@
 |---|---|---|
 | `memory.py` | 四层记忆 CRUD + 检索 + 墓地（bury/restore） | 标准库 |
 | `activation.py` | ACT-R 激活打分 + tick（记访问） | 标准库 |
-| `emotion.py` | 情绪状态机 + 关系刻度 | 标准库 |
 | `workspace_guard.py` | DSH 会话注册表修复/补登记 | 标准库 |
 | `memory_digest.mjs` | 会话 → journal 摘要（脱敏） | Node 18+ |
 

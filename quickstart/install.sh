@@ -48,11 +48,11 @@ EOF
 
 echo "[2/3] 安装脚本到 $BIN"
 mkdir -p "$BIN"
-for f in memory.py activation.py emotion.py workspace_guard.py; do
+for f in memory.py activation.py workspace_guard.py; do
   cp "$SRC/$f" "$BIN/${f%.py}"
 done
 cp "$SRC/memory_digest.mjs" "$BIN/memory_digest.mjs"
-chmod +x "$BIN"/memory "$BIN"/activation "$BIN"/emotion "$BIN"/workspace_guard "$BIN"/memory_digest.mjs 2>/dev/null || true
+chmod +x "$BIN"/memory "$BIN"/activation "$BIN"/workspace_guard "$BIN"/memory_digest.mjs 2>/dev/null || true
 
 echo "[3/3] 验证"
 "$BIN/memory" stats 2>/dev/null || printf '%s\n' "memory 脚本已安装，运行 'memory add --text \"...\" --tags demo' 试写一条"
@@ -60,7 +60,6 @@ echo
 echo "完成。常用命令："
 echo "  memory search <关键字>        # 检索（命中会自动记一次访问）"
 echo "  activation score              # 看当前激活排序"
-echo "  emotion show --inject         # 看情绪状态一行"
 echo "  workspace_guard.py            # 修会话注册表（DSH_HOME 指向你的 .dsh）"
 echo "  node memory_digest.mjs 24     # 把最近 24h 会话抽成 journal"
 
