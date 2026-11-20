@@ -73,6 +73,19 @@ P = σ(A − τ)                         # 召回概率
 ### 4. 情绪是状态机，不是文案
 指数衰减 + 事件三档（轻推 / 混合 / 覆盖）+ 时间带加成 + 确定性伪随机回潮。参数可调，不写死"开心 5 分钟"。
 
+### 5. 反馈层：任务跑没跑、跑成没有，一条命令回答
+每个任务执行后写结构化结果（`state/anchor/<task>.json`），`anchor status` 只读结果、不解析日志：
+
+```
+$ anchor status
+  [OK ] 注册表守卫    正常     最后 2026-11-20 16:12:37（0 分钟前）
+        本次有变更：补登记 2 个会话
+  [NEW ] 会话沉淀     从未运行   最后 从未（—）
+  [LATE] 三副本同步    超期     最后 2026-11-20 09:00:00（7 小时前）
+```
+
+失败、超期、从未运行都会标出来，退出码非 0，可以挂到任何监控上。
+
 ---
 
 ## 快速开始
@@ -86,7 +99,11 @@ git clone <this-repo> && cd anchor
 装完试：
 
 ```bash
-memory add --text "用户偏好先给结论" --tags 偏好 --importance 4
+python3 src/anchor.py status      # 所有任务状态
+python3 src/anchor.py check       # 环境/路径/依赖自检
+python3 src/anchor.py guard       # 手动跑一次守卫
+
+memory add "用户偏好先给结论" --tags 偏好 --importance 4
 memory search 结论
 activation score
 emotion show --inject
