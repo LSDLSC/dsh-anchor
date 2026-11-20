@@ -12,6 +12,53 @@ ACT-R、MemoryOS、YourMemory 里学来的，只是把它们拼成了能跑在 2
 
 ---
 
+## 60 秒理解
+
+一个 agent 换会话就失忆，通常靠三样东西救：**事实库**（记得住）、**人格锚**（不会变）、
+**遗忘机制**（不会越攒越乱）。这个仓库把这三样做成一个目录 + 几个脚本：
+
+```
+$MEMORY_DIR/
+├── hot.md                  每轮都要注入的判断规则（L1 常驻）
+├── facts.jsonl             一行一条的可检索事实（L2 事实）
+├── journal/                会话原文摘要，按天落盘（L3 经历）
+├── state.json              上一次做到哪、下一步做什么（L4 交接）
+├── soul/soul.md            身份、关系、底线（不进遗忘，只能人工改）
+└── graveyard/              墓地：移出检索但物理保留，可 restore
+    ├── index.json
+    └── 2026-11/facts-2026-11.jsonl
+```
+
+四个命令就能用起来：
+
+```bash
+export MEMORY_DIR="$HOME/.dsh/memory"
+python3 src/memory.py add "用户偏好先给结论" --tags 偏好 --importance 4
+python3 src/memory.py search 结论
+python3 src/memory.py handoff          # 拼出"开机该读的东西"：soul → hot → state → 命中事实
+python3 src/memory.py bury --id <id>   # 不想再被想起来，但不想真删
+```
+
+没有数据库、没有守护进程、没有网络调用。**目录就是全部状态**，拷走就是备份。
+
+---
+
+## 目录结构
+
+| 路径 | 是什么 | 给谁 |
+|---|---|---|
+| `src/` | 全部源码：记忆、激活、墓地、守卫、沉淀、总览页 | 想改、想接进自己 agent 的人 |
+| `quickstart/` | 一条命令装最小可用集（记忆目录 + 脚本 + 可选 timer） | 想先跑起来、不想读文档的人 |
+| `deploy/` | 完整部署包：systemd 单元、同步脚本、配置样例 | 要 7×24 跑在服务器上的人 |
+| `docker/` | Dockerfile + compose（只读挂载记忆目录） | 不想碰 systemd 的人 |
+| `templates/` | 人格层与墓地的目录骨架和示例 | 第一次建库的人 |
+| `docs/` | 深度文档：记忆模型、遗忘、架构、已知缺陷、事故复盘 | 想理解"为什么这么设计"的人 |
+
+`quickstart` 和 `deploy` 共用同一套 `src/`，只是安装姿势不同；三者都不是必需的——
+只要 `src/memory.py` 一个文件，加上一个目录，就能开始写事实。
+
+---
+
 ## 事故：我的 AI 把会话列表清空了三次
 
 ### 第一次
@@ -31,15 +78,95 @@ DSH 的会话列表不扫描 `sessions/` 目录，只认 `~/.dsh/storages/worksp
 
 ---
 
-## 三个包
+## 记忆模型（够用版）
 
-| 目录 | 是什么 | 给谁 |
+完整版在 [`docs/memory-model.md`](docs/memory-model.md)，这里只放"不看文档也不会用错"的部分。
+
+### 四层，按"该不该被清理"分，不按"重不重要"分
+
+| 层 | 文件 | 谁写 | 会被清理吗 |
+|---|---|---|---|
+| L1 常驻 | `hot.md` | 人，随时 | 不会自动清理，可人工精简 |
+| L2 事实 | `facts.jsonl` | `memory add` | 会降权、会进墓地 |
+| L3 经历 | `journal/` | 沉淀任务 | 一般只归档 |
+| L4 交接 | `state.json` | 人 / 任务 | 覆盖式更新 |
+| 人格 | `soul/soul.md` | **只能人工** | **永不** |
+
+### 一条事实长什么样
+
+```json
+{"id":"a1b2c3d4","ts":"2026-11-20 20:41","text":"用户偏好先给结论","tags":["偏好"],"importance":4,"access_times":["2026-11-20 20:41"]}
+```
+
+`importance` 1–5，不写就按标签推：身份/规矩/纪律/安全 = 5，偏好/环境/项目/工具 = 4，其余 3。
+`access_times` 每次检索命中追加一次，决定这条记忆"有多热"。
+
+### 遗忘：ACT-R 激活，不是到期删除
+
+```
+B = ln( Σ_j (t_j + 1)^(-0.5) )      # t_j = 第 j 次访问距今小时
+A = B + 0.4 × importance + ε         # ε ~ N(0, 0.5)
+P = σ(A − τ)                         # 召回概率，τ 默认 0
+```
+
+- 没有"30 天自动删除"这种硬边界，只有概率高低；
+- 噪声项让旧条目偶尔"突然想起来"；
+- `importance` 让身份、规矩类条目不沉底；
+- 检索即复习：命中一次，`access_times` 追加一次，下次更热。
+
+### 删除分三级，墓碑先行
+
+| 级别 | 做法 | 可逆 | 什么时候用 |
+|---|---|---|---|
+| 1 降权 | 不写 `access_times`，自然沉底 | 是 | 默认，什么都不用做 |
+| 2 墓地 | `memory bury`，移出检索、原文保留 | 是，`restore` 随时回来 | 明确"不想再被想起来"的旧事 |
+| 3 焚毁 | 清墓地 + 清备份 | **否** | 只有敏感信息或本人明确要求，且需确认 |
+
+绝大多数"该忘"的东西停在第二级。第 3 级是例外路径，不是常规操作。
+
+### 人格层为什么不跟着遗忘
+
+`soul.md` 是"这个 AI 是谁、跟谁是什么关系、底线在哪"。它不进墓地、不按激活值降权、
+不随上下文压缩消失。代价是它不自动生长，所以规则写死两条：**改要有理由**（`CHANGELOG.md` 一行）、
+**改要经本人同意**。骨架见 [`templates/soul/`](templates/soul/)。
+
+---
+
+## 命令一览
+
+| 命令 | 作用 |
+|---|---|
+| `memory add "文本" --tags a,b --importance N` | 写一条事实 |
+| `memory search 关键词` | 检索事实（只读 L2，不扫墓地） |
+| `memory handoff` | 拼开机上下文：soul → hot → state → 命中事实 |
+| `memory stats` | 条目数、标签分布、墓地数量 |
+| `memory bury --id <id> \| --query 关键词` | 移入墓地（物理保留、退出检索） |
+| `memory restore --id <id>` | 从墓地捞回 |
+| `memory graveyard` | 列出墓地条目 |
+| `activation score` | 按召回概率给全部事实排序 |
+| `activation tick --id <id>` | 手工记一次访问（复习） |
+| `anchor status` | 各任务跑没跑、跑成没有（读结构化结果，不解析日志） |
+| `anchor check` | 环境/路径/依赖自检 |
+| `anchor guard` | 手动跑一次注册表守卫 |
+| `registry_guard --adapter dsh\|jsonfile` | 只跑守卫 |
+
+`anchor status` 的四种状态：`[OK ]` 正常、`[NEW ]` 从未运行、`[LATE]` 超期、`[FAIL]` 失败；
+后三种退出码非 0，可以挂到任何监控上。
+
+---
+
+## 配置（全是环境变量，没有配置文件）
+
+| 变量 | 默认 | 说明 |
 |---|---|---|
-| `quickstart/` | 一条命令装最小可用集（记忆目录 + 工具脚本 + 可选 timer） | 想先跑起来、不想读文档的人 |
-| `deploy/` | 完整部署条件包：systemd 单元、同步脚本、配置样例 | 要 7×24 跑在服务器上的人 |
-| `src/` | 开发源文件：记忆、激活、忘墓、守卫、沉淀 | 想改、想接进自己 agent 的人 |
-
-三个包共用同一套源码，`quickstart` 和 `deploy` 只是不同的使用姿势。
+| `MEMORY_DIR` | `$DSH_HOME/memory` 或 `~/.dsh/memory` | 记忆库根目录，**唯一的必设项** |
+| `WHALE_MEMORY_DIR` | — | 旧变量名，兼容保留 |
+| `DSH_HOME` | `~/.dsh` | DSH 根目录，用来推默认 `MEMORY_DIR` |
+| `ANCHOR_ADAPTER` | `dsh` | 守卫用哪个适配器 |
+| `ANCHOR_REGISTRY` | DSH 的 `workspace.json` | 注册表文件路径 |
+| `ANCHOR_REGISTRY_IDS` | `state.sessions[].id` 之类 | 注册表里存 id 列表的 JSON 路径 |
+| `ANCHOR_REGISTRY_DIR` | DSH 的 `sessions/` | 磁盘目录，每个子目录 = 一个 id |
+| `RESTART_CMD` | 无 | 守卫写完注册表后重启宿主的命令 |
 
 ---
 
@@ -58,7 +185,6 @@ DSH 的会话列表不扫描 `sessions/` 目录，只认 `~/.dsh/storages/worksp
 2. 磁盘上一个目录里，每个子目录（或文件）代表一个真实存在的 id。
 
 ```bash
-# 例子：任何"JSON 里有 sessions 列表 + sessions/ 目录"的系统
 ANCHOR_REGISTRY=/srv/app/registry.json \
 ANCHOR_REGISTRY_IDS=state.sessions \
 ANCHOR_REGISTRY_DIR=/srv/app/data/sessions \
@@ -71,72 +197,67 @@ python3 src/registry_guard.py --adapter jsonfile
 
 ---
 
-## 设计要点
+## 安装
 
-### 1. 记忆分四层，别混在一起
-- **hot**：常驻判断规则，每轮注入
-- **facts**：可检索的事实条目（JSONL，一行一条）
-- **journal**：会话原文摘要，按天落盘
-- **soul**：人格锚点，不进遗忘机制
+### 方式一：一条命令（推荐）
 
-分层的好处是：清理只动该动的层，人设和事实不会被"顺手优化"。
-
-### 2. 遗忘用 ACT-R，不用阈值表
-条目激活：
-
-```
-B = ln( Σ_j (t_j + 1)^(-0.5) )      # t_j = 第 j 次访问距今小时
-A = B + 0.4 × importance + ε         # ε ~ N(0, 0.5)
-P = σ(A − τ)                         # 召回概率
+```bash
+git clone https://github.com/LSDLSC/dsh-anchor.git && cd dsh-anchor
+./quickstart/install.sh                    # 建目录 + 装脚本到 ~/.local/bin
+./quickstart/install.sh --with-timers      # 额外装 systemd timer（需 root）
 ```
 
-- 没有"30 天自动删除"这种硬边界，只有概率高低；
-- 噪声项让旧条目偶尔"突然想起来"；
-- `importance` 让身份、规矩类条目不沉底；
-- 检索即复习：命中一次，`access_times` 追加一次，下次更热。
+### 方式二：只要记忆，不要宿主集成
 
-### 3. 删除分三级，墓碑先行
-- 降权：只是概率变低，可逆
-- 移入墓地：物理保留、退出检索，`restore` 随时捞回
-- 焚毁：清墓地 + 备份，需要明确确认
-
-绝大多数"该忘"的东西停在第二级就够。
-
-
-### 4. 反馈层：任务跑没跑、跑成没有，一条命令回答
-每个任务执行后写结构化结果（`state/anchor/<task>.json`），`anchor status` 只读结果、不解析日志：
-
-```
-$ anchor status
-  [OK ] 注册表守卫    正常     最后 2026-11-20 16:12:37（0 分钟前）
-        本次有变更：补登记 2 个会话
-  [NEW ] 会话沉淀     从未运行   最后 从未（—）
-  [LATE] 三副本同步    超期     最后 2026-11-20 09:00:00（7 小时前）
+```bash
+mkdir -p ~/.dsh/memory
+cp src/memory.py src/activation.py ~/.dsh/memory/../  # 放哪都行，能 import 即可
+export MEMORY_DIR=~/.dsh/memory
+python3 src/memory.py add "第一条事实" --tags 示例
 ```
 
-失败、超期、从未运行都会标出来，退出码非 0，可以挂到任何监控上。
+### 方式三：systemd（7×24 跑在服务器上）
+
+`deploy/systemd/` 里有四个单元：`dsh-memory-sync`（三副本同步）、`dsh-memory-guard`（注册表守卫）、
+`dsh-memory-digest`（会话沉淀）、以及对应 `.timer`。复制到 `/etc/systemd/system/`，
+改 `deploy/configs/example.env` 后 `systemctl enable --now`。
+
+### 方式四：Docker
+
+```bash
+docker compose -f docker/docker-compose.yml up -d
+```
+
+容器里只挂记忆目录，不挂宿主数据；记忆文件的所有者是宿主用户，容器以只读方式看它。
 
 ---
 
-## 快速开始
+## 这个仓库是自包含的
+
+刻意做成"拷一个目录就能跑"：
+
+- **没有私有依赖**：只用 Python 3 标准库（`memory.py`/`activation.py`/`anchor.py`/`registry_guard.py`）
+  和 Node 标准库（`memory_digest.mjs`）。
+- **没有必读文档**：本 README 里已经写全了目录结构、数据格式、CLI、环境变量、记忆与遗忘规则。
+  `docs/` 是加深理解用的，不看也能正确使用。
+- **没有外部服务**：不连数据库、不连向量库、不连模型 API。检索是纯文本匹配 + 激活值排序。
+- **数据格式是纯文本**：`facts.jsonl` 一行一条、`journal/` 是 markdown、`state.json` 是普通 JSON，
+  任何编辑器都能看，任何语言都能读。
+- **可以整体搬走**：`tar czf memory.tgz $MEMORY_DIR` 就是完整备份，换机器解开即用。
+
+如果哪天这个仓库被删了，你手上的记忆目录依然完整可用——这是有意为之。
+
+---
+
+## 可视化
 
 ```bash
-git clone <this-repo> && cd anchor
-./quickstart/install.sh            # 装脚本 + 建目录
-./quickstart/install.sh --with-timers   # 额外装 systemd timer（需 root）
+python3 src/memory_view.py --out ~/memory-view.html
 ```
 
-装完试：
+生成一个单文件 HTML：常驻层、交接、事实（可搜索）、经历、墓地各一屏，只读，不联网。
 
-```bash
-python3 src/anchor.py status      # 所有任务状态
-python3 src/anchor.py check       # 环境/路径/依赖自检
-python3 src/anchor.py guard       # 手动跑一次守卫
-
-memory add "用户偏好先给结论" --tags 偏好 --importance 4
-memory search 结论
-activation score
-```
+---
 
 ## 已知缺陷
 
