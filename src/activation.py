@@ -22,7 +22,11 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-ROOT = Path(os.environ.get("WHALE_MEMORY_DIR") or Path(__file__).resolve().parents[1])
+ROOT = Path(
+    os.environ.get("MEMORY_DIR")
+    or os.environ.get("WHALE_MEMORY_DIR")
+    or Path(os.environ.get("DSH_HOME") or Path.home() / ".dsh") / "memory"
+)
 FACTS = ROOT / "facts.jsonl"
 
 

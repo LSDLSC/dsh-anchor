@@ -5,7 +5,7 @@ L1 hot.md 常驻人格；L2 facts.jsonl 事实；L3 journal/ 原文；L4 state.j
 墓地 graveyard/：把"不再参与检索"的旧记忆移出去，物理保留、随时 restore。
 只做本地检索/追加/交接/埋葬，不调用模型、不联网、不写人格层。
 
-由 workspace/memory 目录驱动，路径可用环境变量 WHALE_MEMORY_DIR 覆盖。
+由 MEMORY_DIR 目录驱动（默认 $DSH_HOME/memory，$DSH_HOME 默认 ~/.dsh）；兼容旧变量 WHALE_MEMORY_DIR。
 """
 from __future__ import annotations
 
@@ -18,7 +18,11 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-ROOT = Path(os.environ.get("WHALE_MEMORY_DIR") or Path(__file__).resolve().parents[1])
+ROOT = Path(
+    os.environ.get("MEMORY_DIR")
+    or os.environ.get("WHALE_MEMORY_DIR")
+    or Path(os.environ.get("DSH_HOME") or Path.home() / ".dsh") / "memory"
+)
 HOT = ROOT / "hot.md"
 STATE = ROOT / "state.json"
 FACTS = ROOT / "facts.jsonl"

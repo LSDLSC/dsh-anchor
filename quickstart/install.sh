@@ -48,11 +48,24 @@ EOF
 
 echo "[2/3] 安装脚本到 $BIN"
 mkdir -p "$BIN"
-for f in memory.py activation.py workspace_guard.py; do
-  cp "$SRC/$f" "$BIN/${f%.py}"
+for f in memory.py activation.py workspace_guard.py anchor.py registry_guard.py; do
+  cp "$SRC/$f" "$BIN/$f"
 done
+cp -r "$SRC/adapters" "$BIN/adapters"
 cp "$SRC/memory_digest.mjs" "$BIN/memory_digest.mjs"
-chmod +x "$BIN"/memory "$BIN"/activation "$BIN"/workspace_guard "$BIN"/memory_digest.mjs 2>/dev/null || true
+
+# 生成 wrapper：把 MEMORY_DIR 钉死，脚本就不依赖当前目录
+cat > "$BIN/memory" <<EOF
+#!/usr/bin/env bash
+export MEMORY_DIR="\${MEMORY_DIR:-$MEM_DIR}"
+exec python3 "$BIN/memory.py" "\$@"
+EOF
+cat > "$BIN/activation" <<EOF
+#!/usr/bin/env bash
+export MEMORY_DIR="\${MEMORY_DIR:-$MEM_DIR}"
+exec python3 "$BIN/activation.py" "\$@"
+EOF
+chmod +x "$BIN/memory" "$BIN/activation" "$BIN/memory.py" "$BIN/activation.py" "$BIN/workspace_guard.py" "$BIN/anchor.py" "$BIN/registry_guard.py" "$BIN/memory_digest.mjs"
 
 echo "[3/3] 验证"
 "$BIN/memory" stats 2>/dev/null || printf '%s\n' "memory 脚本已安装，运行 'memory add --text \"...\" --tags demo' 试写一条"
