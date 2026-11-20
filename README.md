@@ -109,6 +109,14 @@ activation score
 emotion show --inject
 ```
 
+## 已知缺陷
+
+这个仓库是从真实故障里长出来的，不是成熟产品。诚实的缺陷清单见
+[`docs/limitations.md`](docs/limitations.md)：锁防不了宿主进程、定时检查有窗口期、
+Windows 无锁、与 DSH 版本强绑定、参数是经验值、没有自动化测试和 CI。
+
+欢迎提 Issue 或 PR，尤其是能复现"双宿主覆盖"的测试用例、跨平台适配和参数实证建议。
+
 ## 引用与致谢
 
 - ACT-R 基础激活与逻辑斯蒂召回：`engram-ai` / `mtrace` / `CerebroCortex-RS`
