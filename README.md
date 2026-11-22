@@ -1,8 +1,12 @@
 # Anchor · 陪伴型 AI 的记忆锚
 
-**仓库地址：<https://github.com/LSDLSC/dsh-anchor>**
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![Zero dependencies](https://img.shields.io/badge/dependencies-0-success.svg)](src/memory.py)
 
 > 让 AI 记住该记的，忘掉该忘的，丢了还能捞回来。
+
+**给正在做长期记忆的自己 agent 的人**：一个目录 + 一个 `memory.py`，就能把「事实 / 经历 / 人格」分层记下来；不想记住的移进墓地，不销毁、不丢失、随时能捞回来。纯标准库，没有数据库、没有守护进程，2C4G 的小机器也跑得动。
 
 Anchor 是一套从真实故障里长出来的工具集：会话注册表被覆盖、记忆只剩一份、人设被时间冲淡、旧内容挤占上下文。它不是"又一个记忆插件"，而是把**可靠性**当成第一需求来做——先不丢，再谈聪明。
 
