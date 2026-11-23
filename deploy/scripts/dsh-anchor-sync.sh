@@ -21,7 +21,7 @@ STATE_DIR="$DSH_HOME/state/anchor"
 GIT_TIMEOUT="${ANCHOR_GIT_TIMEOUT:-30}"
 
 # 参与比对的脚本；新增脚本时改这一行
-FILES=(memory.py emotion.py emotion_auto.py activation.py memory_view.py)
+FILES=(memory.py activation.py memory_view.py)
 
 STAMP="$(date '+%Y-%m-%d %H:%M:%S')"
 TS="$(date +%s)"

@@ -50,7 +50,7 @@ EOF
 
 echo "[2/3] 安装脚本到 $BIN"
 mkdir -p "$BIN"
-for f in memory.py activation.py workspace_guard.py anchor.py registry_guard.py emotion.py emotion_auto.py; do
+for f in memory.py activation.py workspace_guard.py anchor.py registry_guard.py; do
   cp "$SRC/$f" "$BIN/$f"
 done
 cp -r "$SRC/adapters" "$BIN/adapters"
@@ -67,21 +67,9 @@ cat > "$BIN/activation" <<EOF
 export MEMORY_DIR="\${MEMORY_DIR:-$MEM_DIR}"
 exec python3 "$BIN/activation.py" "\$@"
 EOF
-cat > "$BIN/emotion" <<EOF
-#!/usr/bin/env bash
-export MEMORY_DIR="\${MEMORY_DIR:-$MEM_DIR}"
-exec python3 "$BIN/emotion.py" "\$@"
-EOF
-chmod +x "$BIN/memory" "$BIN/activation" "$BIN/emotion" \
+chmod +x "$BIN/memory" "$BIN/activation" \
   "$BIN/memory.py" "$BIN/activation.py" "$BIN/workspace_guard.py" \
-  "$BIN/anchor.py" "$BIN/registry_guard.py" "$BIN/emotion.py" "$BIN/emotion_auto.py" "$BIN/memory_digest.mjs"
-
-# 情绪状态文件：没有就放一份中性的示例，不覆盖已有数据
-[ -f "$MEM_DIR/emotion.json" ] || {
-  if [ -f "$HERE/../templates/emotion/emotion.example.json" ]; then
-    cp "$HERE/../templates/emotion/emotion.example.json" "$MEM_DIR/emotion.json"
-  fi
-}
+  "$BIN/anchor.py" "$BIN/registry_guard.py" "$BIN/memory_digest.mjs"
 
 echo "[3/3] 验证"
 "$BIN/memory" stats 2>/dev/null || printf '%s\n' "memory 脚本已安装，运行 'memory add --text \"...\" --tags demo' 试写一条"
@@ -89,7 +77,6 @@ echo
 echo "完成。常用命令："
 echo "  memory search <关键字>        # 检索（命中会自动记一次访问）"
 echo "  activation score              # 看当前激活排序"
-echo "  emotion show --inject         # 一行情绪状态，可塞进 system prompt"
 echo "  workspace_guard.py            # 修会话注册表（DSH_HOME 指向你的 .dsh）"
 echo "  node memory_digest.mjs 24     # 把最近 24h 会话抽成 journal"
 

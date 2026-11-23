@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # 一行安装（发布后可用）：
-#   curl -fsSL https://raw.githubusercontent.com/<owner>/anchor/main/quickstart/bootstrap.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/LSDLSC/dsh-anchor/main/quickstart/bootstrap.sh | bash
 #
 # 不下载整个仓库，只取要装的脚本；已经装过就跳过（幂等）。
 # 与 install.sh 的区别：install.sh 面向已 clone 的仓库/分发包，bootstrap 面向裸机。
 set -euo pipefail
 
-REPO="${ANCHOR_REPO:-https://raw.githubusercontent.com/OWNER/anchor/main}"
+REPO="${ANCHOR_REPO:-https://raw.githubusercontent.com/LSDLSC/dsh-anchor/main}"
 MEM_DIR="${MEMORY_DIR:-$HOME/.dsh/memory}"
 BIN="${BIN:-$HOME/.local/bin}"
 
