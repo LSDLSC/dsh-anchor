@@ -19,6 +19,7 @@
   emotion.py decay             # 结算：把现算强度写回基准（一般不用跑）
 
 数据落在 $MEMORY_DIR/emotion.json（默认 $DSH_HOME/memory），单个 JSON 文件，可整体拷走。
+注入文本里的称呼：ANCHOR_TARGET_NAME 优先，其次 emotion.json 的 "target" 字段，最后「对方」。
 """
 from __future__ import annotations
 
@@ -32,12 +33,16 @@ from pathlib import Path
 
 
 def resolve_root() -> Path:
+    """记忆目录：MEMORY_DIR → WHALE_MEMORY_DIR → 脚本上一级（像记忆库时）→ $DSH_HOME/memory。"""
     env = os.environ
     if env.get("MEMORY_DIR"):
         return Path(env["MEMORY_DIR"]).expanduser()
     if env.get("WHALE_MEMORY_DIR"):  # 旧变量名，兼容
         return Path(env["WHALE_MEMORY_DIR"]).expanduser()
-    return Path(env.get("DSH_HOME") or Path.home() / ".dsh") / "memory"
+    local = Path(__file__).resolve().parent.parent
+    if (local / "facts.jsonl").exists() or (local / "hot.md").exists():
+        return local
+    return Path(os.environ.get("DSH_HOME") or Path.home() / ".dsh") / "memory"
 
 
 ROOT = resolve_root()
@@ -63,8 +68,12 @@ MOOD_TAU = {
 POSITIVE = {"开心", "被戳中", "得意", "害羞", "撒娇"}
 STAGES = [(0, "陌生"), (21, "熟悉"), (41, "亲近"), (61, "亲密"), (81, "家人")]
 
-# 注入文本里怎么称呼对方；可用 ANCHOR_TARGET_NAME 覆盖
-TARGET = os.environ.get("ANCHOR_TARGET_NAME", "对方")
+# 注入文本里怎么称呼对方：ANCHOR_TARGET_NAME > emotion.json 的 target 字段 > 「对方」
+def target_name(state: dict | None = None) -> str:
+    env = os.environ.get("ANCHOR_TARGET_NAME")
+    if env:
+        return env
+    return str((state or {}).get("target") or "对方")
 
 
 def now() -> datetime:
@@ -187,7 +196,7 @@ def inject_line(s: dict) -> str:
         cd = f"；强情绪冷却到 {until.strftime('%H:%M')}"
     return (
         f"[心情] {label}（强度 {inten:.1f}/10）{cd}；"
-        f"对{TARGET}：{stage_of(aff)}（亲密 {aff:.0f}/100，信任 {rel.get('trust', 0):.0f}）{extra}"
+        f"对{target_name(s)}：{stage_of(aff)}（亲密 {aff:.0f}/100，信任 {rel.get('trust', 0):.0f}）{extra}"
     )
 
 

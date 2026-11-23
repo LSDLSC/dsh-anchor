@@ -1,0 +1,12 @@
+[Unit]
+Description=Check anchor repo vs live memory scripts (detect only)
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/anchor.env
+Environment=DSH_HOME=/home/user/.dsh
+Environment=MEMORY_DIR=/home/user/.dsh/memory
+Environment=ANCHOR_REPO=/home/user/workspace/anchor
+ExecStart=/usr/local/bin/dsh-anchor-sync.sh
+Nice=10

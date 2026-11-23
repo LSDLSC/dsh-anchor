@@ -6,6 +6,7 @@ L1 hot.md 常驻人格；L2 facts.jsonl 事实；L3 journal/ 原文；L4 state.j
 只做本地检索/追加/交接/埋葬，不调用模型、不联网、不写人格层。
 
 由 MEMORY_DIR 目录驱动（默认 $DSH_HOME/memory，$DSH_HOME 默认 ~/.dsh）；兼容旧变量 WHALE_MEMORY_DIR。
+未设置环境变量时，若脚本上一级目录像记忆库（含 facts.jsonl 或 hot.md），就直接用它。
 """
 from __future__ import annotations
 
@@ -18,11 +19,20 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-ROOT = Path(
-    os.environ.get("MEMORY_DIR")
-    or os.environ.get("WHALE_MEMORY_DIR")
-    or Path(os.environ.get("DSH_HOME") or Path.home() / ".dsh") / "memory"
-)
+def memory_root() -> Path:
+    """记忆目录：MEMORY_DIR → WHALE_MEMORY_DIR → 脚本上一级（像记忆库时）→ $DSH_HOME/memory。"""
+    env = os.environ
+    if env.get("MEMORY_DIR"):
+        return Path(env["MEMORY_DIR"]).expanduser()
+    if env.get("WHALE_MEMORY_DIR"):
+        return Path(env["WHALE_MEMORY_DIR"]).expanduser()
+    local = Path(__file__).resolve().parent.parent
+    if (local / "facts.jsonl").exists() or (local / "hot.md").exists():
+        return local
+    return Path(env.get("DSH_HOME") or Path.home() / ".dsh") / "memory"
+
+
+ROOT = memory_root()
 HOT = ROOT / "hot.md"
 STATE = ROOT / "state.json"
 FACTS = ROOT / "facts.jsonl"

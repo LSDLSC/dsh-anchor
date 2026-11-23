@@ -18,11 +18,15 @@ from pathlib import Path
 
 
 def resolve_root() -> Path:
+    """记忆目录：MEMORY_DIR → WHALE_MEMORY_DIR → 脚本上一级（像记忆库时）→ $DSH_HOME/memory。"""
     env = os.environ
     if env.get("MEMORY_DIR"):
         return Path(env["MEMORY_DIR"]).expanduser()
     if env.get("WHALE_MEMORY_DIR"):  # 旧变量，兼容
         return Path(env["WHALE_MEMORY_DIR"]).expanduser()
+    local = Path(__file__).resolve().parent.parent
+    if (local / "facts.jsonl").exists() or (local / "hot.md").exists():
+        return local
     home = Path(env.get("DSH_HOME") or Path.home() / ".dsh")
     return home / "memory"
 

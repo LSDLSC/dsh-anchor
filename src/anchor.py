@@ -24,13 +24,29 @@ from pathlib import Path
 
 DSH_HOME = Path(os.environ.get("DSH_HOME") or Path.home() / ".dsh")
 STATE_DIR = DSH_HOME / "state" / "anchor"
-MEMORY_DIR = Path(os.environ.get("MEMORY_DIR") or DSH_HOME / "memory")
+
+
+def memory_root() -> Path:
+    """记忆目录：MEMORY_DIR → WHALE_MEMORY_DIR → 脚本上一级（像记忆库时）→ $DSH_HOME/memory。"""
+    env = os.environ
+    if env.get("MEMORY_DIR"):
+        return Path(env["MEMORY_DIR"]).expanduser()
+    if env.get("WHALE_MEMORY_DIR"):
+        return Path(env["WHALE_MEMORY_DIR"]).expanduser()
+    local = Path(__file__).resolve().parent.parent
+    if (local / "facts.jsonl").exists() or (local / "hot.md").exists():
+        return local
+    return DSH_HOME / "memory"
+
+
+MEMORY_DIR = memory_root()
 
 # task -> (中文名, 预期间隔秒, 说明)
 TASKS = {
     "guard": ("注册表守卫", 3600, "每小时修 updatedAt / 补登记会话"),
     "digest": ("会话沉淀", 86400, "每天 23:50 把会话抽成 journal"),
     "sync": ("三副本同步", 600, "每 10 分钟推 本地→裸仓→GitHub"),
+    "anchor-sync": ("脚本一致性", 3600, "每小时拉仓库、比对线上脚本哈希（只检测，不覆盖）"),
 }
 
 

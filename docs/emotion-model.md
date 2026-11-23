@@ -84,6 +84,9 @@ emotion touch                # 只记"聊过天"，不动情绪
 emotion decay                # 结算（一般不用跑）
 ```
 
+称呼默认是「对方」；想固定成具体的人，在 `emotion.json` 里加 `"target": "李上车"`，
+或设环境变量 `ANCHOR_TARGET_NAME`（环境变量优先）。
+
 自动侧：
 
 ```bash

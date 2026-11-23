@@ -22,11 +22,20 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-ROOT = Path(
-    os.environ.get("MEMORY_DIR")
-    or os.environ.get("WHALE_MEMORY_DIR")
-    or Path(os.environ.get("DSH_HOME") or Path.home() / ".dsh") / "memory"
-)
+def memory_root() -> Path:
+    """记忆目录：MEMORY_DIR → WHALE_MEMORY_DIR → 脚本上一级（像记忆库时）→ $DSH_HOME/memory。"""
+    env = os.environ
+    if env.get("MEMORY_DIR"):
+        return Path(env["MEMORY_DIR"]).expanduser()
+    if env.get("WHALE_MEMORY_DIR"):
+        return Path(env["WHALE_MEMORY_DIR"]).expanduser()
+    local = Path(__file__).resolve().parent.parent
+    if (local / "facts.jsonl").exists() or (local / "hot.md").exists():
+        return local
+    return Path(env.get("DSH_HOME") or Path.home() / ".dsh") / "memory"
+
+
+ROOT = memory_root()
 FACTS = ROOT / "facts.jsonl"
 
 

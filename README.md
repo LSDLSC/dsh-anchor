@@ -213,7 +213,7 @@ echo "用户说：谢谢你，今天辛苦了" | python3 src/emotion_auto.py --i
 
 | 变量 | 默认 | 说明 |
 |---|---|---|
-| `MEMORY_DIR` | `$DSH_HOME/memory` 或 `~/.dsh/memory` | 记忆库根目录，**唯一的必设项** |
+| `MEMORY_DIR` | `$DSH_HOME/memory` 或 `~/.dsh/memory` | 记忆库根目录。未设置时依次尝试 `WHALE_MEMORY_DIR`、脚本上一级目录（含 `facts.jsonl` 或 `hot.md` 时），最后才用默认值 |
 | `WHALE_MEMORY_DIR` | — | 旧变量名，兼容保留 |
 | `DSH_HOME` | `~/.dsh` | DSH 根目录，用来推默认 `MEMORY_DIR` |
 | `ANCHOR_ADAPTER` | `dsh` | 守卫用哪个适配器 |
@@ -221,7 +221,7 @@ echo "用户说：谢谢你，今天辛苦了" | python3 src/emotion_auto.py --i
 | `ANCHOR_REGISTRY_IDS` | `state.sessions[].id` 之类 | 注册表里存 id 列表的 JSON 路径 |
 | `ANCHOR_REGISTRY_DIR` | DSH 的 `sessions/` | 磁盘目录，每个子目录 = 一个 id |
 | `RESTART_CMD` | 无 | 守卫写完注册表后重启宿主的命令 |
-| `ANCHOR_TARGET_NAME` | `对方` | 情绪注入文本里怎么称呼对方 |
+| `ANCHOR_TARGET_NAME` | `对方` | 情绪注入文本里怎么称呼对方；也可以写进 `emotion.json` 的 `"target"` 字段，环境变量优先 |
 
 ---
 
@@ -273,9 +273,9 @@ python3 src/memory.py add "第一条事实" --tags 示例
 
 ### 方式三：systemd（7×24 跑在服务器上）
 
-`deploy/systemd/` 里有四个单元：`dsh-memory-sync`（三副本同步）、`dsh-memory-guard`（注册表守卫）、
-`dsh-memory-digest`（会话沉淀）、以及对应 `.timer`。复制到 `/etc/systemd/system/`，
-改 `deploy/configs/example.env` 后 `systemctl enable --now`。
+`deploy/systemd/` 里有五组单元：`dsh-memory-sync`（三副本同步）、`dsh-memory-guard`（注册表守卫）、
+`dsh-memory-digest`（会话沉淀）、`dsh-anchor-sync`（每小时比对仓库与线上脚本，只检测不覆盖），
+以及对应 `.timer`。复制到 `/etc/systemd/system/`，改 `deploy/configs/example.env` 后 `systemctl enable --now`。
 
 ### 方式四：Docker
 
