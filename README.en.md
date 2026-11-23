@@ -114,7 +114,10 @@ python3 src/registry_guard.py --adapter dsh
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/LSDLSC/dsh-anchor/main/quickstart/bootstrap.sh | bash
-# China mirror (self-signed cert):
+# China: via gh-proxy (also proxies the files bootstrap downloads):
+curl -fsSL https://gh-proxy.com/https://raw.githubusercontent.com/LSDLSC/dsh-anchor/main/quickstart/bootstrap.sh \
+  | ANCHOR_REPO='https://gh-proxy.com/https://raw.githubusercontent.com/LSDLSC/dsh-anchor/main' bash
+# Or from our mirror (self-signed cert):
 curl -fsSLk https://47.111.65.201:8080/sites/hub/anchor/install.sh | bash
 ```
 

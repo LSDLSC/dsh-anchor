@@ -262,6 +262,21 @@ python3 src/registry_guard.py --adapter jsonfile
 
 ### 方式一：一条命令（推荐）
 
+直连 GitHub：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/LSDLSC/dsh-anchor/main/quickstart/bootstrap.sh | bash
+```
+
+国内走 gh-proxy 加速（内部下载也走代理）：
+
+```bash
+curl -fsSL https://gh-proxy.com/https://raw.githubusercontent.com/LSDLSC/dsh-anchor/main/quickstart/bootstrap.sh \
+  | ANCHOR_REPO='https://gh-proxy.com/https://raw.githubusercontent.com/LSDLSC/dsh-anchor/main' bash
+```
+
+或者 clone 下来装（自带 systemd timer 可选）：
+
 ```bash
 git clone https://github.com/LSDLSC/dsh-anchor.git && cd dsh-anchor
 ./quickstart/install.sh                    # 建目录 + 装脚本到 ~/.local/bin
